@@ -17,9 +17,10 @@ type BadgerKV struct {
 	kv *badger.KV
 }
 
-func NewKV(dir string) *BadgerKV {
+func NewKV(metaDir, valueDir string) *BadgerKV {
 	opts := badger.DefaultOptions
-	opts.Dir = dir
+	opts.Dir = metaDir
+	opts.ValueDir = valueDir
 	kv := badger.NewKV(&opts)
 
 	return &BadgerKV{
@@ -69,12 +70,16 @@ func (b *BadgerKV) Ping(conn *resp.Conn, args []resp.Value) bool {
 }
 
 var addr = flag.String("addr", ":16379", "listening address")
-var dir = flag.String("dir", "db", "directory for kvs storage")
+var metaDir = flag.String("value", "db/meta", "metadata directory for kvs storage")
+var valueDir = flag.String("meta", "db/data", "data directory for kvs storage")
 
 func main() {
 	flag.Parse()
 
-	kv := NewKV(*dir)
+	os.MkdirAll(*metaDir, 0774)
+	os.MkdirAll(*valueDir, 0774)
+
+	kv := NewKV(*metaDir, *valueDir)
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT)
